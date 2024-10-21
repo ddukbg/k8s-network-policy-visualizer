@@ -1,0 +1,164 @@
+/* 기본 스타일링 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+
+/* 헤더 스타일링 */
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+
+/* 컨트롤 섹션 스타일링 */
+.controls-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 검색 컨테이너 스타일링 */
+.search-container {
+    flex: 1;
+    margin-right: 20px; /* 검색 창과 필터 섹션 사이에 여백 추가 */
+}
+
+#search {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* 필터 컨테이너 스타일링 */
+.filter-container {
+    flex: 1;
+    max-width: 300px;
+}
+
+.filter-container h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#namespace-filters {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#namespace-filters label {
+    display: block;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+#namespace-filters input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 메인 컨테이너 스타일링 */
+.main-container {
+    display: flex;
+    flex-direction: row;
+    padding: 20px;
+}
+
+/* 그래프 컨테이너 스타일링 */
+.graph-container {
+    flex: 3;
+    height: 80vh;
+    margin-right: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 상세 정보 컨테이너 스타일링 */
+.details-container {
+    flex: 1;
+    height: 80vh;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.details-container h2 {
+    text-align: center;
+    color: #333;
+}
+
+#detail-content {
+    margin-top: 10px;
+    line-height: 1.6;
+    color: #555;
+}
+
+/* 체크박스 레이블 스타일링 */
+#namespace-filters label {
+    display: block;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+#namespace-filters input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 스크롤 가능한 필터 영역 */
+#namespace-filters {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* 반응형 디자인 추가 */
+@media (max-width: 768px) {
+    .controls-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-container {
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+
+    .main-container {
+        flex-direction: column;
+    }
+
+    .graph-container {
+        margin-right: 0;
+        margin-bottom: 20px;
+        height: 60vh;
+    }
+
+    .details-container {
+        height: 60vh;
+    }
+}
+
+/* 상세 정보 패널 내 규칙 항목 스타일링 */
+.details-container strong {
+    color: #333;
+}
+
+.details-container br {
+    line-height: 1.6;
+}

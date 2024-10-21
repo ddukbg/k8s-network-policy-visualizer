@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>k8sNetPolVisualizer</title>
+    <!-- Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.1/cytoscape.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Kubernetes Network Policy Visualizer</h1>
+    </header>
+
+    <section class="controls-section">
+        <div class="search-container">
+            <input type="text" id="search" placeholder="Search for Pod or Policy...">
+        </div>
+        <div class="filter-container">
+            <h3>Filter by Namespace</h3>
+            <div id="namespace-filters">
+                <!-- 체크박스가 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </section>
+
+    <main class="main-container">
+        <div id="graph" class="graph-container"></div>
+        <div id="details" class="details-container">
+            <h2>Details</h2>
+            <div id="detail-content">Click on a node to see details.</div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
