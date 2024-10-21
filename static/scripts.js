@@ -1,15 +1,13 @@
+// scripts.js
+
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io();
 
+    // 현재 선택된 리소스 타입 (기본값: deployment)
+    let currentResourceType = 'deployment';
+
     // 초기 데이터 로드
-    fetch('/data')
-        .then(response => response.json())
-        .then(data => {
-            initializeGraph(data);
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-        });
+    fetchData(currentResourceType);
 
     // 네임스페이스 리스트 로드
     fetch('/namespaces')
@@ -21,12 +19,37 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching namespaces:', error);
         });
 
+    // 리소스 타입 필터 변경 시 데이터 로드
+    document.getElementsByName('resource_type').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                currentResourceType = this.value;
+                fetchData(currentResourceType);
+            }
+        });
+    });
+
     // 그래프 초기화 함수
     function initializeGraph(data) {
+        if (window.cy) {
+            window.cy.destroy();
+        }
+
         window.cy = cytoscape({
             container: document.getElementById('graph'),
             elements: data.nodes.concat(data.edges),
             style: [
+                {
+                    selector: 'node[group="deployment"]',
+                    style: {
+                        'background-color': '#2ECC40',
+                        'label': 'data(label)',
+                        'text-valign': 'center',
+                        'color': '#fff',
+                        'text-outline-width': 2,
+                        'text-outline-color': '#2ECC40'
+                    }
+                },
                 {
                     selector: 'node[group="pod"]',
                     style: {
@@ -78,12 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
             ],
             layout: {
                 name: 'cose',
-                padding: 10
+                padding: 10,
+                animate: false // 성능 최적화를 위해 애니메이션 비활성화
             }
         });
 
         // 노드 클릭 시 상세 정보 표시
-        // scripts.js 내 노드 클릭 핸들러 수정
         cy.on('tap', 'node', function(evt){
             var node = evt.target;
             var content = '';
@@ -142,9 +165,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         content = `<strong>Error:</strong> Failed to fetch policy details.`;
                         document.getElementById('detail-content').innerHTML = content;
                     });
+            } else if(node.data('group') === 'deployment') {
+                const deploymentFullName = node.data('id'); // 네임스페이스/Deployment명 전체
+                fetch(`/resource/deployment/${encodeURIComponent(deploymentFullName)}`)
+                    .then(response => response.json())
+                    .then(deploymentData => {
+                        if(deploymentData.error) {
+                            content = `<strong>Error:</strong> ${deploymentData.error}`;
+                        } else {
+                            content = `<strong>Deployment:</strong> ${deploymentData.name}<br>`;
+                            content += `<strong>Namespace:</strong> ${deploymentData.namespace}<br>`;
+                            content += `<strong>Labels:</strong> ${JSON.stringify(deploymentData.labels)}<br>`;
+                            content += `<strong>Status:</strong> ${deploymentData.status}<br>`;
+                        }
+                        document.getElementById('detail-content').innerHTML = content;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching deployment details:', error);
+                        content = `<strong>Error:</strong> Failed to fetch deployment details.`;
+                        document.getElementById('detail-content').innerHTML = content;
+                    });
             } else if(node.data('group') === 'pod') {
-                const podName = node.data('label'); // 네임스페이스/Pod명 전체
-                fetch(`/pod/${encodeURIComponent(podName)}`)
+                const podFullName = node.data('id'); // 네임스페이스/Pod명 전체
+                fetch(`/resource/pod/${encodeURIComponent(podFullName)}`)
                     .then(response => response.json())
                     .then(podData => {
                         if(podData.error) {
@@ -268,21 +311,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 실시간 업데이트 수신 및 그래프 업데이트
-    socket.on('update', function(data) {
-        if (window.cy) {
-            // 기존 그래프 삭제
-            window.cy.elements().remove();
-
-            // 새로운 데이터 추가
-            window.cy.add(data.nodes.concat(data.edges));
-
-            // 레이아웃 재적용
-            window.cy.layout({ name: 'cose', padding: 10 }).run();
-
-            // 현재 필터 적용
-            applyCurrentFilters();
+    socket.on('update_deployment', function(graphData) {
+        if (currentResourceType === 'deployment') {
+            cy.batch(function() {
+                cy.elements().remove();
+                cy.add(graphData.nodes.concat(graphData.edges));
+                cy.layout({
+                    name: 'cose',
+                    padding: 10,
+                    animate: false
+                }).run();
+                filterGraph(); // 필터 재적용
+            });
         }
     });
+
+    socket.on('update_pod', function(graphData) {
+        if (currentResourceType === 'pod') {
+            cy.batch(function() {
+                cy.elements().remove();
+                cy.add(graphData.nodes.concat(graphData.edges));
+                cy.layout({
+                    name: 'cose',
+                    padding: 10,
+                    animate: false
+                }).run();
+                filterGraph(); // 필터 재적용
+            });
+        }
+    });
+
+    // 데이터 가져오는 함수
+    function fetchData(resource_type) {
+        fetch(`/data?resource_type=${resource_type}`)
+            .then(response => response.json())
+            .then(data => {
+                initializeGraph(data);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }
 
     // 현재 필터 상태 재적용 함수
     function applyCurrentFilters() {
