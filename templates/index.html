@@ -37,6 +37,11 @@
     </section>
 
     <main class="main-container">
+        <!-- 로딩 오버레이 -->
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+
         <div id="graph" class="graph-container"></div>
         <div id="details" class="details-container">
             <h2>Details</h2>
@@ -44,6 +49,7 @@
         </div>
     </main>
 
+    <!-- 사용자 스크립트 로드 -->
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>

@@ -3,8 +3,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io();
 
+    // 로딩 오버레이 요소 가져오기
+    const loadingOverlay = document.getElementById('loading-overlay');
+
     // 현재 선택된 리소스 타입 (기본값: deployment)
     let currentResourceType = 'deployment';
+
+    // 노드 위치 저장을 위한 객체 (선택 사항)
+    let nodePositions = {};
 
     // 초기 데이터 로드
     fetchData(currentResourceType);
@@ -48,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         'color': '#fff',
                         'text-outline-width': 2,
                         'text-outline-color': '#2ECC40',
-                        'font-size': '10px',  // 폰트 크기 조정
-                        'width': 'label',     // 노드 크기를 라벨에 맞춤
+                        'font-size': '10px',
+                        'width': 'label',
                         'height': 'label'
                     }
                 },
@@ -84,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     selector: 'node[group="ipblock"]',
                     style: {
-                        'background-color': '#B10DC9',  // 예시 색상
+                        'background-color': '#B10DC9',
                         'shape': 'rectangle',
                         'label': 'data(label)',
                         'text-valign': 'center',
@@ -140,8 +146,22 @@ document.addEventListener('DOMContentLoaded', function() {
             layout: {
                 name: 'cose',
                 padding: 10,
-                animate: false // 성능 최적화를 위해 애니메이션 비활성화
+                animate: false,
+                nodeDimensionsIncludeLabels: true
             }
+        });
+
+        // 저장된 위치가 있으면 복원 (선택 사항)
+        window.cy.nodes().forEach(function(node) {
+            if(nodePositions[node.id()]) {
+                node.position(nodePositions[node.id()]);
+            }
+        });
+
+        // 노드 위치 변경 시 저장 (선택 사항)
+        window.cy.on('dragfree', 'node', function(evt){
+            var node = evt.target;
+            nodePositions[node.id()] = node.position();
         });
 
         // 노드 클릭 시 상세 정보 표시
@@ -362,47 +382,66 @@ document.addEventListener('DOMContentLoaded', function() {
     // 실시간 업데이트 수신 및 그래프 업데이트
     socket.on('update_deployment', function(graphData) {
         if (currentResourceType === 'deployment') {
+            showLoading(); // 로딩 시작
             cy.batch(function() {
                 cy.elements().remove();
                 cy.add(graphData.nodes.concat(graphData.edges));
                 cy.layout({
                     name: 'cose',
                     padding: 10,
-                    animate: false
+                    animate: false,
+                    nodeDimensionsIncludeLabels: true
                 }).run();
                 filterGraph(); // 필터 재적용
+                hideLoading(); // 로딩 완료
             });
         }
     });
 
     socket.on('update_pod', function(graphData) {
         if (currentResourceType === 'pod') {
+            showLoading(); // 로딩 시작
             cy.batch(function() {
                 cy.elements().remove();
                 cy.add(graphData.nodes.concat(graphData.edges));
                 cy.layout({
                     name: 'cose',
                     padding: 10,
-                    animate: false
+                    animate: false,
+                    nodeDimensionsIncludeLabels: true
                 }).run();
                 filterGraph(); // 필터 재적용
+                hideLoading(); // 로딩 완료
             });
         }
     });
 
     // 데이터 가져오는 함수
     function fetchData(resource_type) {
+        showLoading(); // 로딩 시작
         fetch(`/data?resource_type=${resource_type}`)
             .then(response => response.json())
             .then(data => {
                 initializeGraph(data);
+                hideLoading(); // 로딩 완료
             })
             .catch(error => {
                 console.error('Error fetching data:', error);
+                hideLoading(); // 로딩 완료
             });
     }
 
-    // 현재 필터 상태 재적용 함수
+    // 로딩 오버레이 표시 함수
+    function showLoading() {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    // 로딩 오버레이 숨김 함수
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
+
+    // 현재 필터 상태 재적용 함수 (선택 사항)
     function applyCurrentFilters() {
         const allCheckbox = document.getElementById('filter-all');
         const namespaceCheckboxes = document.querySelectorAll('.namespace-checkbox');
