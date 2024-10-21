@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             ],
             layout: {
-                name: 'cose',
+                name: 'cose-bilkent',
                 padding: 10,
                 animate: false,
                 nodeDimensionsIncludeLabels: true
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cy.elements().remove();
                 cy.add(graphData.nodes.concat(graphData.edges));
                 cy.layout({
-                    name: 'cose',
+                    name: 'cose-bilkent',
                     padding: 10,
                     animate: false,
                     nodeDimensionsIncludeLabels: true
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cy.elements().remove();
                 cy.add(graphData.nodes.concat(graphData.edges));
                 cy.layout({
-                    name: 'cose',
+                    name: 'cose-bilkent',
                     padding: 10,
                     animate: false,
                     nodeDimensionsIncludeLabels: true
