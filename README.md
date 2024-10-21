@@ -94,6 +94,9 @@ venv\Scripts\activate
 #### 의존성 설치
 
 ```bash
+# npm 의존성
+npm install cytoscape
+# Python 의존성
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -103,7 +106,6 @@ pip install -r requirements.txt
 > ```plaintext
 > Flask==2.3.2
 > Flask-SocketIO==5.3.3
-> Cytoscape.js==3.19.1
 > ```
 
 ### 구성
@@ -486,6 +488,9 @@ venv\Scripts\activate
 #### Install Dependencies
 
 ```bash
+# npm 
+npm install cytoscape
+# python 
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -495,7 +500,6 @@ pip install -r requirements.txt
 > ```plaintext
 > Flask==2.3.2
 > Flask-SocketIO==5.3.3
-> Cytoscape.js==3.19.1
 > ```
 
 ### Configuration
