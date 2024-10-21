@@ -4,6 +4,7 @@ import subprocess
 import json
 from threading import Thread, Lock
 import time
+import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -147,6 +148,12 @@ def map_policies_to_resources(policies, resources, resource_type='pod'):
 
     return policy_map, edges, resource_map
 
+def get_hash(data):
+    """JSON 데이터를 정렬된 키 순서로 직렬화한 후 SHA-256 해시를 생성합니다."""
+    if data is None:
+        return None
+    return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -277,6 +284,10 @@ def monitor_changes():
     previous_pods = get_pods()
     previous_deployments = get_deployments()
 
+    previous_policies_hash = get_hash(previous_policies) if previous_policies else None
+    previous_pods_hash = get_hash(previous_pods) if previous_pods else None
+    previous_deployments_hash = get_hash(previous_deployments) if previous_deployments else None
+
     while True:
         try:
             time.sleep(60)  # 1분마다 체크
@@ -284,14 +295,17 @@ def monitor_changes():
             current_pods = get_pods()
             current_deployments = get_deployments()
 
-            if not current_policies or not current_pods or not current_deployments:
-                continue
+            current_policies_hash = get_hash(current_policies) if current_policies else None
+            current_pods_hash = get_hash(current_pods) if current_pods else None
+            current_deployments_hash = get_hash(current_deployments) if current_deployments else None
 
-            policies_changed = current_policies != previous_policies
-            pods_changed = current_pods != previous_pods
-            deployments_changed = current_deployments != previous_deployments
+            policies_changed = current_policies_hash != previous_policies_hash
+            pods_changed = current_pods_hash != previous_pods_hash
+            deployments_changed = current_deployments_hash != previous_deployments_hash
 
             if policies_changed or pods_changed or deployments_changed:
+                print(f"Updating deployment and pod data at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
                 # Deployment 데이터 업데이트
                 policy_map_deployment, edges_deployment, deployment_map = map_policies_to_resources(current_policies, current_deployments, 'deployment')
                 nodes_deployment = []
@@ -383,6 +397,10 @@ def monitor_changes():
                 previous_policies = current_policies
                 previous_pods = current_pods
                 previous_deployments = current_deployments
+
+                previous_policies_hash = current_policies_hash
+                previous_pods_hash = current_pods_hash
+                previous_deployments_hash = current_deployments_hash
 
         except Exception as e:
             print(f"Error in monitor_changes: {e}")
