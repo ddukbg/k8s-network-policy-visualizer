@@ -8,7 +8,7 @@
 ![Cytoscape.js](https://img.shields.io/badge/Cytoscape.js-3.19.1-orange.svg)
 
 ---
-# 개인적인 필요성에 의해 계속해서 수정중인 프로젝트입니다~
+# *Kubectl이 설치된 환경에서 사용 가능합니다.(개발 진행중)*
 
 ## 한국어
 
@@ -71,7 +71,7 @@
 #### 저장소 클론
 
 ```bash
-git clone https://github.com/yourusername/k8s-network-policy-visualizer.git
+git clone https://github.com/ddukbg/k8s-network-policy-visualizer.git
 cd k8s-network-policy-visualizer
 ```
 
@@ -349,7 +349,7 @@ pip install -r requirements.txt
 2. **포크한 저장소 클론:**
 
    ```bash
-   git clone https://github.com/yourusername/k8s-network-policy-visualizer.git
+   git clone https://github.com/ddukbg/k8s-network-policy-visualizer.git
    cd k8s-network-policy-visualizer
    ```
 
@@ -395,7 +395,7 @@ pip install -r requirements.txt
 질문, 제안 또는 피드백이 있으시면 언제든지 연락주세요:
 
 - **이메일:** wowrebong@gmail.com
-- **GitHub 이슈:** [k8s-network-policy-visualizer/issues](https://github.com/yourusername/k8s-network-policy-visualizer/issues)
+- **GitHub 이슈:** [k8s-network-policy-visualizer/issues](https://github.com/ddukbg/k8s-network-policy-visualizer/issues)
 
 ---
 
@@ -463,7 +463,7 @@ pip install -r requirements.txt
 #### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/k8s-network-policy-visualizer.git
+git clone https://github.com/ddukbg/k8s-network-policy-visualizer.git
 cd k8s-network-policy-visualizer
 ```
 
@@ -741,7 +741,7 @@ Contributions are welcome! To contribute to the **Kubernetes Network Policy Visu
 2. **Clone Your Fork:**
 
    ```bash
-   git clone https://github.com/yourusername/k8s-network-policy-visualizer.git
+   git clone https://github.com/ddukbg/k8s-network-policy-visualizer.git
    cd k8s-network-policy-visualizer
    ```
 
@@ -787,7 +787,7 @@ This project is licensed under the [MIT License](LICENSE). You are free to use, 
 For any questions, suggestions, or feedback, please feel free to reach out:
 
 - **Email:** wowrebong@gmail.com
-- **GitHub Issues:** [k8s-network-policy-visualizer/issues](https://github.com/yourusername/k8s-network-policy-visualizer/issues)
+- **GitHub Issues:** [k8s-network-policy-visualizer/issues](https://github.com/ddukbg/k8s-network-policy-visualizer/issues)
 
 ---
 
