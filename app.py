@@ -109,7 +109,7 @@ def map_policies_to_resources(policies, resources, resource_type='pod'):
         resource_full_name = f"{resource_namespace}/{resource_name}"
         resource_map[resource_full_name] = {
             'id': resource_full_name,
-            'label': f"{resource_name}.{resource_namespace}",
+            'label': f"{resource_name}.{resource_namespace}",  # 변경된 부분
             'group': resource_type,
             'labels': resource_labels,
             'status': resource.get('status', {}).get('phase', 'Unknown') if resource_type == 'pod' else 'Unknown',
@@ -118,35 +118,88 @@ def map_policies_to_resources(policies, resources, resource_type='pod'):
 
     # 정책을 Resource에 매핑하고 엣지 생성
     for policy_key, policy in policy_map.items():
-        for resource_key, resource in resource_map.items():
-            resource_namespace, resource_name = resource_key.split('/')
-            if resource_namespace != policy['namespace']:
-                continue
-            selector = policy['pod_selector']
-            if matches_selector(resource['labels'], selector):
-                # Ingress 규칙 추가
-                for ingress_rule in policy['ingress']:
-                    ports = ingress_rule.get('ports', [])
-                    edges.append({
-                        'source': policy_key,
-                        'target': resource_key,
-                        'type': 'ingress',
-                        'ports': ports
-                    })
-                    resource['policies'].append(policy_key)  # 정책 추가
-
-                # Egress 규칙 추가
-                for egress_rule in policy['egress']:
-                    ports = egress_rule.get('ports', [])
-                    edges.append({
-                        'source': policy_key,
-                        'target': resource_key,
-                        'type': 'egress',
-                        'ports': ports
-                    })
-                    resource['policies'].append(policy_key)  # 정책 추가
-
+        # Ingress 규칙 처리
+        for ingress_rule in policy['ingress']:
+            # IPBlock 처리
+            if 'ipBlock' in ingress_rule:
+                ip_block = ingress_rule['ipBlock']
+                ip_block_id = f"{policy_key}/ipBlock"
+                edges.append({
+                    'source': policy_key,
+                    'target': ip_block_id,
+                    'type': 'ingress-ipBlock',
+                    'details': ip_block  # 추가적인 세부 정보 포함
+                })
+                # IPBlock 노드 추가
+                resource_map[ip_block_id] = {
+                    'id': ip_block_id,
+                    'label': f"IPBlock: {ip_block.get('cidr', 'N/A')}",
+                    'group': 'ipblock',
+                    'labels': {},
+                    'status': 'N/A',
+                    'policies': [policy_key]
+                }
+            
+            # From 필드 처리
+            for from_field in ingress_rule.get('from', []):
+                if 'namespaceSelector' in from_field or 'podSelector' in from_field:
+                    # 대상 리소스의 네임스페이스와 파드 셀렉터에 따라 타겟 리소스를 찾아 엣지 생성
+                    for resource_key, resource in resource_map.items():
+                        resource_namespace, resource_name = resource_key.split('/')
+                        if resource_namespace != policy['namespace']:
+                            continue
+                        if matches_selector(resource['labels'], from_field.get('podSelector', {})) and matches_selector({'name': resource_namespace}, from_field.get('namespaceSelector', {})):
+                            ports = ingress_rule.get('ports', [])
+                            edges.append({
+                                'source': policy_key,
+                                'target': resource_key,
+                                'type': 'ingress',
+                                'ports': ports
+                            })
+                            resource['policies'].append(policy_key)
+        
+        # Egress 규칙 처리
+        for egress_rule in policy['egress']:
+            # IPBlock 처리
+            if 'ipBlock' in egress_rule:
+                ip_block = egress_rule['ipBlock']
+                ip_block_id = f"{policy_key}/ipBlock"
+                edges.append({
+                    'source': policy_key,
+                    'target': ip_block_id,
+                    'type': 'egress-ipBlock',
+                    'details': ip_block  # 추가적인 세부 정보 포함
+                })
+                # IPBlock 노드 추가
+                resource_map[ip_block_id] = {
+                    'id': ip_block_id,
+                    'label': f"IPBlock: {ip_block.get('cidr', 'N/A')}",
+                    'group': 'ipblock',
+                    'labels': {},
+                    'status': 'N/A',
+                    'policies': [policy_key]
+                }
+            
+            # To 필드 처리
+            for to_field in egress_rule.get('to', []):
+                if 'namespaceSelector' in to_field or 'podSelector' in to_field:
+                    # 대상 리소스의 네임스페이스와 파드 셀렉터에 따라 타겟 리소스를 찾아 엣지 생성
+                    for resource_key, resource in resource_map.items():
+                        resource_namespace, resource_name = resource_key.split('/')
+                        if resource_namespace != policy['namespace']:
+                            continue
+                        if matches_selector(resource['labels'], to_field.get('podSelector', {})) and matches_selector({'name': resource_namespace}, to_field.get('namespaceSelector', {})):
+                            ports = egress_rule.get('ports', [])
+                            edges.append({
+                                'source': policy_key,
+                                'target': resource_key,
+                                'type': 'egress',
+                                'ports': ports
+                            })
+                            resource['policies'].append(policy_key)
+    
     return policy_map, edges, resource_map
+
 
 def get_hash(data):
     """JSON 데이터를 정렬된 키 순서로 직렬화한 후 SHA-256 해시를 생성합니다."""

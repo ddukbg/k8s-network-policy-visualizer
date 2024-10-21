@@ -47,7 +47,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         'text-valign': 'center',
                         'color': '#fff',
                         'text-outline-width': 2,
-                        'text-outline-color': '#2ECC40'
+                        'text-outline-color': '#2ECC40',
+                        'font-size': '10px',  // 폰트 크기 조정
+                        'width': 'label',     // 노드 크기를 라벨에 맞춤
+                        'height': 'label'
                     }
                 },
                 {
@@ -58,7 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         'text-valign': 'center',
                         'color': '#fff',
                         'text-outline-width': 2,
-                        'text-outline-color': '#0074D9'
+                        'text-outline-color': '#0074D9',
+                        'font-size': '10px',
+                        'width': 'label',
+                        'height': 'label'
                     }
                 },
                 {
@@ -69,7 +75,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         'text-valign': 'center',
                         'color': '#fff',
                         'text-outline-width': 2,
-                        'text-outline-color': '#FF4136'
+                        'text-outline-color': '#FF4136',
+                        'font-size': '10px',
+                        'width': 'label',
+                        'height': 'label'
+                    }
+                },
+                {
+                    selector: 'node[group="ipblock"]',
+                    style: {
+                        'background-color': '#B10DC9',  // 예시 색상
+                        'shape': 'rectangle',
+                        'label': 'data(label)',
+                        'text-valign': 'center',
+                        'color': '#fff',
+                        'text-outline-width': 2,
+                        'text-outline-color': '#B10DC9',
+                        'font-size': '10px',
+                        'width': 'label',
+                        'height': 'label'
                     }
                 },
                 {
@@ -96,6 +120,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         'label': 'data(label)',
                         'font-size': '10px',
                         'text-rotation': 'autorotate'
+                    }
+                },
+                {
+                    selector: 'edge[type="ingress-ipBlock"], edge[type="egress-ipBlock"]',
+                    style: {
+                        'width': 2,
+                        'line-color': '#B10DC9',
+                        'target-arrow-color': '#B10DC9',
+                        'target-arrow-shape': 'diamond',
+                        'curve-style': 'bezier',
+                        'label': 'data(details.cidr)',
+                        'font-size': '8px',
+                        'text-rotation': 'autorotate',
+                        'line-style': 'dashed'
                     }
                 }
             ],
@@ -134,6 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const ports = ingress.ports.map(p => `${p.protocol}/${p.port}`).join(', ');
                                         content += `&nbsp;&nbsp;<strong>Ports:</strong> ${ports}<br>`;
                                     }
+                                    if(ingress.ipBlock) {
+                                        content += `&nbsp;&nbsp;<strong>IPBlock:</strong> ${JSON.stringify(ingress.ipBlock)}<br>`;
+                                    }
                                     content += `<br>`;
                                 });
                             } else {
@@ -151,6 +192,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if(egress.ports) {
                                         const ports = egress.ports.map(p => `${p.protocol}/${p.port}`).join(', ');
                                         content += `&nbsp;&nbsp;<strong>Ports:</strong> ${ports}<br>`;
+                                    }
+                                    if(egress.ipBlock) {
+                                        content += `&nbsp;&nbsp;<strong>IPBlock:</strong> ${JSON.stringify(egress.ipBlock)}<br>`;
                                     }
                                     content += `<br>`;
                                 });
@@ -205,6 +249,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         content = `<strong>Error:</strong> Failed to fetch pod details.`;
                         document.getElementById('detail-content').innerHTML = content;
                     });
+            } else if(node.data('group') === 'ipblock') {
+                // IPBlock 상세 정보 처리
+                const ipBlockLabel = node.data('label');
+                content = `<strong>IPBlock:</strong> ${ipBlockLabel}<br>`;
+                document.getElementById('detail-content').innerHTML = content;
             }
         });
 
