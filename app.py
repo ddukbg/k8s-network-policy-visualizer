@@ -109,7 +109,7 @@ def map_policies_to_resources(policies, resources, resource_type='pod'):
         resource_full_name = f"{resource_namespace}/{resource_name}"
         resource_map[resource_full_name] = {
             'id': resource_full_name,
-            'label': resource_name,
+            'label': f"{resource_name}.{resource_namespace}",
             'group': resource_type,
             'labels': resource_labels,
             'status': resource.get('status', {}).get('phase', 'Unknown') if resource_type == 'pod' else 'Unknown',
