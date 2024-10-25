@@ -219,3 +219,63 @@ header {
 .details-container br {
     line-height: 1.6;
 }
+
+.graph-controls-container {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+}
+
+.zoom-controls {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.zoom-controls button {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.zoom-controls button:hover {
+    background-color: #e9ecef;
+}
+
+#layout-select {
+    width: 100%;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+#save-layout {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#save-layout:hover {
+    background-color: #0056b3;
+}
+
+.view-controls {
+    margin-top: 10px;
+}
+
+.view-controls label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}

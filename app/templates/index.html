@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>k8sNetPolVisualizer</title>
-    <!-- Cytoscape.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.1/cytoscape.min.js"></script>
-    <!-- cose-bilkent 레이아웃 확장 로드 -->
-    <script src="https://unpkg.com/cytoscape-cose-bilkent@4.0.0/cytoscape-cose-bilkent.js"></script>
-    <!-- Socket.IO -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kubernetes Network Policy Visualizer</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <!-- Cytoscape 관련 스크립트들을 순서대로 로드 -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <!-- cose-bilkent 레이아웃을 위한 의존성 -->
+        <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+        <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+        <script src="https://unpkg.com/cytoscape-cose-bilkent/cytoscape-cose-bilkent.js"></script>
+    </head>
 <body>
     <header>
         <h1>Kubernetes Network Policy Visualizer</h1>
@@ -18,14 +21,16 @@
 
     <section class="controls-section">
         <div class="search-container">
-            <input type="text" id="search" placeholder="Search for Pod or Policy...">
+            <input type="text" id="search" placeholder="Search resources...">
         </div>
+
         <div class="filter-container">
             <h3>Filter by Namespace</h3>
             <div id="namespace-filters">
-                <!-- 체크박스가 여기에 동적으로 추가됩니다 -->
+                <!-- Namespaces will be dynamically added here -->
             </div>
         </div>
+
         <!-- controls-section 안에 새로운 div 추가 -->
         <div class="graph-controls-container">
             <h3>Graph Controls</h3>
@@ -52,32 +57,39 @@
             </div>
             <button id="save-layout">Save Layout</button>
         </div>
-        <!-- Resource Type 필터 추가 -->
+
         <div class="resource-filter-container">
             <h3>Filter by Resource Type</h3>
             <label>
-                <input type="radio" name="resource_type" value="deployment" checked> Deployment
+                <input type="radio" name="resource_type" value="deployment" checked>
+                Deployment
             </label>
             <label>
-                <input type="radio" name="resource_type" value="pod"> Pod
+                <input type="radio" name="resource_type" value="pod">
+                Pod
             </label>
         </div>
     </section>
 
     <main class="main-container">
-        <!-- 로딩 오버레이 -->
         <div id="loading-overlay">
             <div class="spinner"></div>
         </div>
 
         <div id="graph" class="graph-container"></div>
+
         <div id="details" class="details-container">
             <h2>Details</h2>
-            <div id="detail-content">Click on a node to see details.</div>
+            <div id="detail-content">
+                Click on a node to see details.
+            </div>
         </div>
     </main>
 
-    <!-- 사용자 스크립트 로드 -->
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://unpkg.com/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
 </html>
