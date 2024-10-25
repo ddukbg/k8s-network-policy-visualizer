@@ -279,3 +279,280 @@ header {
     align-items: center;
     gap: 5px;
 }
+
+.communication-analysis-container {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 15px;
+}
+
+.analysis-controls {
+    margin-bottom: 15px;
+}
+
+.mode-selector {
+    margin-bottom: 10px;
+}
+
+.mode-selector label {
+    margin-right: 15px;
+}
+
+.resource-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.resource-selector select {
+    flex: 1;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.arrow {
+    color: #666;
+    font-weight: bold;
+}
+
+.analyze-btn {
+    width: 100%;
+    padding: 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.analyze-btn:hover {
+    background-color: #0056b3;
+}
+
+.analysis-results {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.analysis-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #808080;
+}
+
+.status-indicator.allowed {
+    background-color: #2ECC40;
+}
+
+.status-indicator.blocked {
+    background-color: #FF4136;
+}
+
+.details-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.policies-list, .ports-list {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.policies-list ul, .ports-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.policies-list li, .ports-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.matrix-container {
+    flex: 1;
+    overflow: auto;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px;
+}
+
+.matrix-wrapper {
+    position: relative;
+    overflow: auto;
+    max-height: 800px;
+}
+
+#communication-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 800px;
+}
+
+#communication-matrix th,
+#communication-matrix td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    min-width: 100px;
+}
+
+#communication-matrix th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#communication-matrix .corner-header {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #f8f9fa;
+}
+
+#communication-matrix td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.matrix-cell {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.matrix-cell:hover {
+    background-color: #f5f5f5;
+}
+
+.matrix-cell.allowed {
+    background-color: #e3ffe3;
+}
+
+.matrix-cell.blocked {
+    background-color: #ffe3e3;
+}
+
+.matrix-cell.no-policy {
+    background-color: #f0f0f0;
+}
+
+.matrix-controls {
+    padding: 15px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.search-box input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
+}
+
+.namespace-filter select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
+}
+
+.matrix-legend {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+    justify-content: center;
+    background-color: white;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.legend-color.allowed {
+    background-color: #e3ffe3;
+}
+
+.legend-color.blocked {
+    background-color: #ffe3e3;
+}
+
+.legend-color.no-policy {
+    background-color: #f0f0f0;
+}
+
+.cell-details {
+    padding: 15px;
+}
+
+.select-prompt {
+    color: #666;
+    font-style: italic;
+}
+
+.view-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.tab-button.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.view-container {
+    display: none;
+}
+
+.view-container.active {
+    display: block;
+}

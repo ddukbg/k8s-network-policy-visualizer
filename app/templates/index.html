@@ -19,77 +19,199 @@
         <h1>Kubernetes Network Policy Visualizer</h1>
     </header>
 
-    <section class="controls-section">
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Search resources...">
-        </div>
+    <!-- 뷰 선택 탭 추가 -->
+    <div class="view-tabs">
+        <button class="tab-button active" data-view="graph">Graph View</button>
+        <button class="tab-button" data-view="matrix">Matrix View</button>
+    </div>
 
-        <div class="filter-container">
-            <h3>Filter by Namespace</h3>
-            <div id="namespace-filters">
-                <!-- Namespaces will be dynamically added here -->
-            </div>
-        </div>
+    <!-- 그래프 뷰 -->
+    <div id="graph-view" class="view-container">
 
-        <!-- controls-section 안에 새로운 div 추가 -->
-        <div class="graph-controls-container">
-            <h3>Graph Controls</h3>
-            <div class="layout-controls">
-                <label>Layout:
-                    <select id="layout-select">
-                        <option value="grid">Grid</option>
-                        <option value="circle">Circle</option>
-                        <option value="concentric">Concentric</option>
-                        <option value="breadthfirst">Breadth First</option>
-                    </select>
-                </label>
+        <section class="controls-section">
+            <div class="search-container">
+                <input type="text" id="search" placeholder="Search resources...">
             </div>
-            <div class="zoom-controls">
-                <button id="zoom-in"><i class="fas fa-plus"></i></button>
-                <button id="zoom-fit"><i class="fas fa-expand"></i></button>
-                <button id="zoom-out"><i class="fas fa-minus"></i></button>
+
+            <div class="filter-container">
+                <h3>Filter by Namespace</h3>
+                <div id="namespace-filters">
+                    <!-- Namespaces will be dynamically added here -->
+                </div>
             </div>
-            <div class="view-controls">
+
+            <!-- controls-section 안에 새로운 div 추가 -->
+            <div class="communication-analysis-container">
+                <h3>Communication Analysis</h3>
+                <div class="analysis-controls">
+                    <div class="mode-selector">
+                        <label>
+                            <input type="radio" name="analysis-mode" value="auto" checked>
+                            Auto Analysis
+                        </label>
+                        <label>
+                            <input type="radio" name="analysis-mode" value="path">
+                            Path Analysis
+                        </label>
+                    </div>
+                    
+                    <div class="path-analyzer" style="display: none;">
+                        <div class="resource-selector">
+                            <select id="source-selector">
+                                <option value="">Select Source</option>
+                            </select>
+                            <span class="arrow">→</span>
+                            <select id="target-selector">
+                                <option value="">Select Target</option>
+                            </select>
+                        </div>
+                        <button id="analyze-path" class="analyze-btn">
+                            Analyze Path
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="analysis-results">
+                    <div class="analysis-summary">
+                        <span class="status-indicator"></span>
+                        <span class="status-text">Select resources to analyze communication</span>
+                    </div>
+                    <div class="details-panel">
+                        <div class="policies-list">
+                            <h4>Affected Policies</h4>
+                            <ul id="affected-policies"></ul>
+                        </div>
+                        <div class="ports-list">
+                            <h4>Allowed Ports</h4>
+                            <ul id="allowed-ports"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="graph-controls-container">
+                <h3>Graph Controls</h3>
+                <div class="layout-controls">
+                    <label>Layout:
+                        <select id="layout-select">
+                            <option value="grid">Grid</option>
+                            <option value="circle">Circle</option>
+                            <option value="concentric">Concentric</option>
+                            <option value="breadthfirst">Breadth First</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="zoom-controls">
+                    <button id="zoom-in"><i class="fas fa-plus"></i></button>
+                    <button id="zoom-fit"><i class="fas fa-expand"></i></button>
+                    <button id="zoom-out"><i class="fas fa-minus"></i></button>
+                </div>
+                <div class="view-controls">
+                    <label>
+                        <input type="checkbox" id="group-by-namespace" />
+                        Group by Namespace
+                    </label>
+                </div>
+                <button id="save-layout">Save Layout</button>
+            </div>
+
+            <div class="resource-filter-container">
+                <h3>Filter by Resource Type</h3>
                 <label>
-                    <input type="checkbox" id="group-by-namespace" />
-                    Group by Namespace
+                    <input type="radio" name="resource_type" value="deployment" checked>
+                    Deployment
+                </label>
+                <label>
+                    <input type="radio" name="resource_type" value="pod">
+                    Pod
                 </label>
             </div>
-            <button id="save-layout">Save Layout</button>
-        </div>
+        </section>
 
-        <div class="resource-filter-container">
-            <h3>Filter by Resource Type</h3>
-            <label>
-                <input type="radio" name="resource_type" value="deployment" checked>
-                Deployment
-            </label>
-            <label>
-                <input type="radio" name="resource_type" value="pod">
-                Pod
-            </label>
-        </div>
-    </section>
+        <main class="main-container">
+            <div id="loading-overlay">
+                <div class="spinner"></div>
+            </div>
 
-    <main class="main-container">
-        <div id="loading-overlay">
-            <div class="spinner"></div>
-        </div>
+            <div id="graph" class="graph-container"></div>
 
-        <div id="graph" class="graph-container"></div>
+            <div id="details" class="details-container">
+                <h2>Details</h2>
+                <div id="detail-content">
+                    Click on a node to see details.
+                </div>
+            </div>
+        </main>
+    </div>
 
-        <div id="details" class="details-container">
-            <h2>Details</h2>
-            <div id="detail-content">
-                Click on a node to see details.
+    <!-- 매트릭스 뷰 -->
+    <div id="matrix-view" class="view-container" style="display: none;">
+        <div class="controls-section">
+            <div class="matrix-controls">
+                <div class="search-box">
+                    <input type="text" id="resource-search" placeholder="Search resources...">
+                </div>
+                <div class="namespace-filter">
+                    <select id="namespace-select" multiple>
+                    </select>
+                </div>
+                <div class="resource-type">
+                    <label>
+                        <input type="radio" name="matrix_resource_type" value="deployment" checked>
+                        Deployment
+                    </label>
+                    <label>
+                        <input type="radio" name="matrix_resource_type" value="pod">
+                        Pod
+                    </label>
+                </div>
             </div>
         </div>
-    </main>
+
+        <div class="main-container">
+            <div class="matrix-container">
+                <div class="matrix-wrapper">
+                    <table id="communication-matrix">
+                        <thead>
+                            <tr>
+                                <th class="corner-header">From ↓ / To →</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="details-container">
+                <h3>Communication Details</h3>
+                <div id="matrix-cell-details">
+                    <p class="select-prompt">Select a cell to view communication details</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="matrix-legend">
+            <div class="legend-item">
+                <span class="legend-color allowed"></span>
+                <span class="legend-label">Allowed</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color blocked"></span>
+                <span class="legend-label">Blocked</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color no-policy"></span>
+                <span class="legend-label">No Policy</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://unpkg.com/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/matrix.js') }}"></script>
 </body>
 </html>

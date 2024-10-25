@@ -6,6 +6,7 @@ from ..services.k8s import (
     get_namespaces
 )
 from ..services.graph import map_policies_to_resources
+from ..services.communication_analyzer import CommunicationAnalyzer
 from ..utils.exceptions import ResourceNotFoundError, InvalidResourceTypeError
 from ..utils.logger import logger
 from .. import socketio, cache_lock, cached_graph_data
@@ -17,32 +18,36 @@ def index():
     logger.debug("Rendering index page")
     return render_template('index.html')
 
+@api.route('/favicon.ico')
+def favicon():
+    return '', 204
+
 @api.route('/data')
 def data():
+    logger.debug("Data request received")  # 로깅 추가
     resource_type = request.args.get('resource_type', 'deployment')
-    logger.info(f"Fetching data for resource type: {resource_type}")
-
-    if resource_type not in ['deployment', 'pod']:
-        raise InvalidResourceTypeError(f"Invalid resource type: {resource_type}")
+    logger.debug(f"Resource type: {resource_type}")  # 로깅 추가
 
     with cache_lock:
         if cached_graph_data.get(resource_type):
-            logger.debug(f"Returning cached data for {resource_type}")
+            logger.debug("Returning cached data")  # 로깅 추가
             return jsonify(cached_graph_data[resource_type])
 
     try:
         policies = get_network_policies()
-        logger.debug("Successfully retrieved network policies")
+        logger.debug(f"Fetched {len(policies.get('items', []))} network policies")  # 로깅 추가
 
         if resource_type == 'deployment':
             resources = get_deployments()
-            logger.debug("Successfully retrieved deployments")
         else:
             resources = get_pods()
-            logger.debug("Successfully retrieved pods")
+        
+        logger.debug(f"Fetched {len(resources.get('items', []))} {resource_type}s")  # 로깅 추가
 
         policy_map, edges, resource_map = map_policies_to_resources(policies, resources, resource_type)
-        logger.debug("Successfully mapped policies to resources")
+
+        # 노드와 엣지 데이터 생성 전에 로깅
+        logger.debug(f"Mapped data: {len(resource_map)} resources, {len(edges)} edges")
 
         nodes = []
         formatted_edges = []
@@ -61,10 +66,7 @@ def data():
         for edge in edges:
             ports = edge.get('ports', [])
             if ports:
-                ports_str = ', '.join([
-                    f"{p.get('protocol', 'TCP')}/{p.get('port', 'N/A')}"
-                    for p in ports
-                ])
+                ports_str = ', '.join([f"{p.get('protocol', 'TCP')}/{p.get('port', 'N/A')}" for p in ports])
             else:
                 ports_str = 'All Ports'
 
@@ -77,24 +79,22 @@ def data():
                 }
             })
 
-        # 중복 노드 제거
-        unique_nodes = {node['data']['id']: node for node in nodes}.values()
+        logger.debug(f"Created {len(nodes)} nodes and {len(formatted_edges)} edges")  # 로깅 추가
 
         graph_data = {
-            'nodes': list(unique_nodes),
+            'nodes': nodes,
             'edges': formatted_edges
         }
 
-        # 캐시 업데이트
         with cache_lock:
             cached_graph_data[resource_type] = graph_data
 
-        logger.info(f"Successfully generated graph data for {resource_type}")
+        logger.debug("Returning new graph data")  # 로깅 추가
         return jsonify(graph_data)
 
     except Exception as e:
         logger.error(f"Error generating graph data: {str(e)}", exc_info=True)
-        raise
+        return jsonify({"error": str(e)}), 500
 
 @api.route('/namespaces')
 def namespaces():
@@ -196,6 +196,46 @@ def resource_details(resource_type, resource_name):
         logger.error(f"Error fetching {resource_type} details: {str(e)}", exc_info=True)
         raise
 
+@api.route('/analyze-communication')
+def analyze_communication():
+    """전체 통신 가능성을 분석합니다."""
+    policies = get_network_policies()
+    if resource_type == 'deployment':
+        resources = get_deployments()
+    else:
+        resources = get_pods()
+
+    analyzer = CommunicationAnalyzer(policies, resources)
+    communication_map = analyzer.analyze_communications()
+    
+    return jsonify(communication_map)
+
+@api.route('/check-communication')
+def check_communication():
+    """특정 두 리소스 간의 통신 가능성을 확인합니다."""
+    source = request.args.get('source')
+    target = request.args.get('target')
+    resource_type = request.args.get('resource_type', 'deployment')  # 리소스 타입 파라미터 추가
+    
+    if not source or not target:
+        return jsonify({"error": "Source and target must be specified"}), 400
+
+    try:
+        policies = get_network_policies()
+        if resource_type == 'deployment':
+            resources = get_deployments()
+        else:
+            resources = get_pods()
+
+        analyzer = CommunicationAnalyzer(policies, resources)
+        analyzer.analyze_communications()  # 전체 분석 먼저 수행
+        result = analyzer.check_communication(source, target)
+        
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error checking communication: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    
 @socketio.on('connect')
 def handle_connect():
     logger.info("Client connected")
