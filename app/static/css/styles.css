@@ -556,3 +556,44 @@ header {
 .view-container.active {
     display: block;
 }
+
+.matrix-cell {
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 40px;
+    position: relative;
+}
+
+.matrix-cell.allowed {
+    background-color: #e3ffe3;
+    color: #2ECC40;
+}
+
+.matrix-cell.blocked {
+    background-color: #ffe3e3;
+    color: #FF4136;
+}
+
+.matrix-cell.no-policy {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.matrix-cell:hover {
+    opacity: 0.8;
+}
+
+/* 로딩 상태 */
+.matrix-cell.loading:after {
+    content: '...';
+    position: absolute;
+    animation: loading 1s infinite;
+}
+
+@keyframes loading {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+}
+

@@ -148,22 +148,38 @@
     <div id="matrix-view" class="view-container" style="display: none;">
         <div class="controls-section">
             <div class="matrix-controls">
-                <div class="search-box">
-                    <input type="text" id="resource-search" placeholder="Search resources...">
-                </div>
-                <div class="namespace-filter">
-                    <select id="namespace-select" multiple>
-                    </select>
-                </div>
-                <div class="resource-type">
+                <div class="filter-section">
                     <label>
-                        <input type="radio" name="matrix_resource_type" value="deployment" checked>
-                        Deployment
+                        <input type="checkbox" id="show-system-pods">
+                        Show System Pods
                     </label>
-                    <label>
-                        <input type="radio" name="matrix_resource_type" value="pod">
-                        Pod
-                    </label>
+                    
+                    <div class="search-container">
+                        <input type="text" 
+                            id="resource-search" 
+                            placeholder="Search resources..."
+                            class="search-input">
+                    </div>
+
+                    <div class="view-mode-selector">
+                        <label>View Mode:</label>
+                        <select id="view-mode">
+                            <option value="full">Full Matrix</option>
+                            <option value="summary">Namespace Summary</option>
+                            <option value="filtered">Filtered View</option>
+                        </select>
+                    </div>
+
+                    <div class="resource-type">
+                        <label>
+                            <input type="radio" name="matrix_resource_type" value="deployment" checked>
+                            Deployment
+                        </label>
+                        <label>
+                            <input type="radio" name="matrix_resource_type" value="pod">
+                            Pod
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

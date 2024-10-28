@@ -3,7 +3,8 @@ from ..services.k8s import (
     get_network_policies,
     get_pods,
     get_deployments,
-    get_namespaces
+    get_namespaces,
+    NetworkPolicyAnalyzer
 )
 from ..services.graph import map_policies_to_resources
 from ..services.communication_analyzer import CommunicationAnalyzer
@@ -215,22 +216,23 @@ def check_communication():
     """특정 두 리소스 간의 통신 가능성을 확인합니다."""
     source = request.args.get('source')
     target = request.args.get('target')
-    resource_type = request.args.get('resource_type', 'deployment')  # 리소스 타입 파라미터 추가
+    resource_type = request.args.get('resource_type', 'deployment')
     
     if not source or not target:
         return jsonify({"error": "Source and target must be specified"}), 400
 
     try:
+        logger.debug(f"Checking communication from {source} to {target}")
         policies = get_network_policies()
         if resource_type == 'deployment':
             resources = get_deployments()
         else:
             resources = get_pods()
 
-        analyzer = CommunicationAnalyzer(policies, resources)
-        analyzer.analyze_communications()  # 전체 분석 먼저 수행
-        result = analyzer.check_communication(source, target)
+        analyzer = NetworkPolicyAnalyzer(policies, resources)
+        result = analyzer.analyze_communication(source, target)
         
+        logger.debug(f"Analysis result: {result}")
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error checking communication: {str(e)}", exc_info=True)
