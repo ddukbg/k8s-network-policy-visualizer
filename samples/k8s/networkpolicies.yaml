@@ -1,0 +1,57 @@
+# networkpolicies.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-a-to-app-b
+  namespace: test-namespace-1
+spec:
+  podSelector:
+    matchLabels:
+      app: app-b
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: app-a
+    ports:
+    - protocol: TCP
+      port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: test-namespace-2
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-specific
+  namespace: test-namespace-3
+spec:
+  podSelector:
+    matchLabels:
+      app: app-c
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: test-namespace-1
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: app-a
+    ports:
+    - protocol: TCP
+      port: 80
+---
+# 추가 네트워크 정책은 동일한 방식으로 정의

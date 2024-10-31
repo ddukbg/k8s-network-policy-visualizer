@@ -1,0 +1,59 @@
+# deployments.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-a
+  namespace: test-namespace-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-a
+  template:
+    metadata:
+      labels:
+        app: app-a
+    spec:
+      containers:
+      - name: app-a
+        image: nginx:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-b
+  namespace: test-namespace-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-b
+  template:
+    metadata:
+      labels:
+        app: app-b
+    spec:
+      containers:
+      - name: app-b
+        image: nginx:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-c
+  namespace: test-namespace-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-c
+  template:
+    metadata:
+      labels:
+        app: app-c
+    spec:
+      containers:
+      - name: app-c
+        image: nginx:latest
+---
+# 추가 디플로이먼트는 동일한 방식으로 정의
