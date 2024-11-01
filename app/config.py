@@ -17,7 +17,7 @@ class Config:
             SECRET_KEY=os.getenv('SECRET_KEY', 'your-secret-key-change-it'),
             DEBUG=os.getenv('DEBUG', 'False').lower() == 'true',
             MONITOR_INTERVAL=int(os.getenv('MONITOR_INTERVAL', '60')),
-            LOG_LEVEL=os.getenv('LOG_LEVEL', 'INFO')
+            LOG_LEVEL=os.getenv('LOG_LEVEL', 'DEBUG')
         )
 
 class ProductionConfig(Config):

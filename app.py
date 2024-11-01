@@ -1,9 +1,11 @@
+#app.py
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 import subprocess
 import json
 from threading import Thread, Lock
 import time
+from ..utils.logger import logger
 import hashlib
 
 app = Flask(__name__)
@@ -74,34 +76,30 @@ def get_namespaces():
         return []
 
 def matches_selector(labels, selector):
+    """
+    레이블이 선택자와 일치하는지 확인
+    """
+    logger.debug(f"Matching labels {labels} against selector {selector}")
     if not selector:
+        logger.debug("Empty selector, returning False")
         return False
-    for key, value in selector.get('matchLabels', {}).items():
+    
+    match_labels = selector.get('matchLabels', {})
+    for key, value in match_labels.items():
         if labels.get(key) != value:
+            logger.debug(f"Label mismatch: {key}={labels.get(key)} != {value}")
             return False
+    
+    logger.debug("Labels match")
     return True
 
 def map_policies_to_resources(policies, resources, resource_type='pod'):
+    logger.debug("Starting policy mapping")
     policy_map = {}
     edges = []
     resource_map = {}
 
-    # 정책 매핑
-    for policy in policies['items']:
-        policy_name = policy['metadata']['name']
-        namespace = policy['metadata']['namespace']
-        policy_key = f"{namespace}/{policy_name}"
-        policy_map[policy_key] = {
-            'id': policy_key,
-            'label': policy_name,
-            'group': 'policy',
-            'namespace': namespace,
-            'pod_selector': policy['spec'].get('podSelector', {}),
-            'ingress': policy['spec'].get('ingress', []),
-            'egress': policy['spec'].get('egress', [])
-        }
-
-    # Resource 초기화 (Pod 또는 Deployment)
+    # Resource 초기화
     for resource in resources['items']:
         resource_name = resource['metadata']['name']
         resource_namespace = resource['metadata']['namespace']
@@ -109,95 +107,121 @@ def map_policies_to_resources(policies, resources, resource_type='pod'):
         resource_full_name = f"{resource_namespace}/{resource_name}"
         resource_map[resource_full_name] = {
             'id': resource_full_name,
-            'label': f"{resource_name}.{resource_namespace}",  # 변경된 부분
-            'group': resource_type,
-            'labels': resource_labels,
-            'status': resource.get('status', {}).get('phase', 'Unknown') if resource_type == 'pod' else 'Unknown',
-            'policies': []  # 초기화
+            'label': resource_name,
+            'group': resource_namespace,  # namespace로 그룹핑
+            'type': resource_type,
+            'labels': resource_labels
         }
 
-    # 정책을 Resource에 매핑하고 엣지 생성
-    for policy_key, policy in policy_map.items():
-        # Ingress 규칙 처리
-        for ingress_rule in policy['ingress']:
-            # IPBlock 처리
-            if 'ipBlock' in ingress_rule:
-                ip_block = ingress_rule['ipBlock']
-                ip_block_id = f"{policy_key}/ipBlock"
-                edges.append({
-                    'source': policy_key,
-                    'target': ip_block_id,
-                    'type': 'ingress-ipBlock',
-                    'details': ip_block  # 추가적인 세부 정보 포함
-                })
-                # IPBlock 노드 추가
-                resource_map[ip_block_id] = {
-                    'id': ip_block_id,
-                    'label': f"IPBlock: {ip_block.get('cidr', 'N/A')}",
-                    'group': 'ipblock',
-                    'labels': {},
-                    'status': 'N/A',
-                    'policies': [policy_key]
-                }
-            
-            # From 필드 처리
-            for from_field in ingress_rule.get('from', []):
-                if 'namespaceSelector' in from_field or 'podSelector' in from_field:
-                    # 대상 리소스의 네임스페이스와 파드 셀렉터에 따라 타겟 리소스를 찾아 엣지 생성
-                    for resource_key, resource in resource_map.items():
-                        resource_namespace, resource_name = resource_key.split('/')
-                        if resource_namespace != policy['namespace']:
-                            continue
-                        if matches_selector(resource['labels'], from_field.get('podSelector', {})) and matches_selector({'name': resource_namespace}, from_field.get('namespaceSelector', {})):
-                            ports = ingress_rule.get('ports', [])
-                            edges.append({
-                                'source': policy_key,
-                                'target': resource_key,
-                                'type': 'ingress',
-                                'ports': ports
-                            })
-                            resource['policies'].append(policy_key)
-        
+    # NetworkPolicy 처리
+    for policy in policies['items']:
+        namespace = policy['metadata']['namespace']
+        policy_name = policy['metadata']['name']
+        logger.debug(f"Processing policy: {policy_name} in {namespace}")
+
         # Egress 규칙 처리
-        for egress_rule in policy['egress']:
-            # IPBlock 처리
-            if 'ipBlock' in egress_rule:
-                ip_block = egress_rule['ipBlock']
-                ip_block_id = f"{policy_key}/ipBlock"
-                edges.append({
-                    'source': policy_key,
-                    'target': ip_block_id,
-                    'type': 'egress-ipBlock',
-                    'details': ip_block  # 추가적인 세부 정보 포함
-                })
-                # IPBlock 노드 추가
-                resource_map[ip_block_id] = {
-                    'id': ip_block_id,
-                    'label': f"IPBlock: {ip_block.get('cidr', 'N/A')}",
-                    'group': 'ipblock',
-                    'labels': {},
-                    'status': 'N/A',
-                    'policies': [policy_key]
-                }
+        if 'egress' in policy['spec'] and 'podSelector' in policy['spec']:
+            # 소스 pod/deployment 찾기
+            source_pods = []
+            pod_selector = policy['spec']['podSelector']
+            for resource_key, resource in resource_map.items():
+                res_ns = resource_key.split('/')[0]
+                if (res_ns == namespace and
+                    matches_selector(resource['labels'], pod_selector)):
+                    source_pods.append(resource_key)
             
-            # To 필드 처리
-            for to_field in egress_rule.get('to', []):
-                if 'namespaceSelector' in to_field or 'podSelector' in to_field:
-                    # 대상 리소스의 네임스페이스와 파드 셀렉터에 따라 타겟 리소스를 찾아 엣지 생성
-                    for resource_key, resource in resource_map.items():
-                        resource_namespace, resource_name = resource_key.split('/')
-                        if resource_namespace != policy['namespace']:
-                            continue
-                        if matches_selector(resource['labels'], to_field.get('podSelector', {})) and matches_selector({'name': resource_namespace}, to_field.get('namespaceSelector', {})):
-                            ports = egress_rule.get('ports', [])
-                            edges.append({
-                                'source': policy_key,
-                                'target': resource_key,
-                                'type': 'egress',
+            logger.debug(f"Found source pods for egress: {source_pods}")
+
+            # 각 egress 규칙 처리
+            for egress in policy['spec']['egress']:
+                for to in egress.get('to', []):
+                    target_pods = []
+                    
+                    # 같은 네임스페이스 내 통신
+                    if 'podSelector' in to:
+                        for resource_key, resource in resource_map.items():
+                            res_ns = resource_key.split('/')[0]
+                            if (res_ns == namespace and
+                                matches_selector(resource['labels'], to['podSelector'])):
+                                target_pods.append(resource_key)
+                    
+                    # 다른 네임스페이스와의 통신
+                    if 'namespaceSelector' in to:
+                        ns_selector = to['namespaceSelector']
+                        pod_selector = to.get('podSelector', {})
+                        for resource_key, resource in resource_map.items():
+                            res_ns = resource_key.split('/')[0]
+                            if matches_selector({'name': res_ns}, ns_selector):
+                                if not pod_selector or matches_selector(resource['labels'], pod_selector):
+                                    target_pods.append(resource_key)
+
+                    logger.debug(f"Found target pods: {target_pods}")
+                    
+                    # 엣지 생성
+                    ports = egress.get('ports', [])
+                    for source in source_pods:
+                        for target in target_pods:
+                            edge = {
+                                'source': source,
+                                'target': target,
+                                'type': 'allowed',
                                 'ports': ports
-                            })
-                            resource['policies'].append(policy_key)
-    
+                            }
+                            edges.append(edge)
+                            logger.debug(f"Created edge: {source} -> {target}")
+
+        # Ingress 규칙 처리
+        if 'ingress' in policy['spec'] and 'podSelector' in policy['spec']:
+            # 대상 pod/deployment 찾기
+            target_pods = []
+            pod_selector = policy['spec']['podSelector']
+            for resource_key, resource in resource_map.items():
+                res_ns = resource_key.split('/')[0]
+                if (res_ns == namespace and
+                    matches_selector(resource['labels'], pod_selector)):
+                    target_pods.append(resource_key)
+            
+            logger.debug(f"Found target pods for ingress: {target_pods}")
+
+            # 각 ingress 규칙 처리
+            for ingress in policy['spec']['ingress']:
+                for from_field in ingress.get('from', []):
+                    source_pods = []
+                    
+                    # 같은 네임스페이스 내 통신
+                    if 'podSelector' in from_field:
+                        for resource_key, resource in resource_map.items():
+                            res_ns = resource_key.split('/')[0]
+                            if (res_ns == namespace and
+                                matches_selector(resource['labels'], from_field['podSelector'])):
+                                source_pods.append(resource_key)
+                    
+                    # 다른 네임스페이스와의 통신
+                    if 'namespaceSelector' in from_field:
+                        ns_selector = from_field['namespaceSelector']
+                        pod_selector = from_field.get('podSelector', {})
+                        for resource_key, resource in resource_map.items():
+                            res_ns = resource_key.split('/')[0]
+                            if matches_selector({'name': res_ns}, ns_selector):
+                                if not pod_selector or matches_selector(resource['labels'], pod_selector):
+                                    source_pods.append(resource_key)
+
+                    logger.debug(f"Found source pods for ingress: {source_pods}")
+                    
+                    # 엣지 생성
+                    ports = ingress.get('ports', [])
+                    for source in source_pods:
+                        for target in target_pods:
+                            edge = {
+                                'source': source,
+                                'target': target,
+                                'type': 'allowed',
+                                'ports': ports
+                            }
+                            edges.append(edge)
+                            logger.debug(f"Created edge: {source} -> {target}")
+
+    logger.debug(f"Created total {len(edges)} edges")
     return policy_map, edges, resource_map
 
 
@@ -232,7 +256,18 @@ def data():
     if not resources:
         return jsonify({"error": f"Failed to retrieve {resource_type}s."}), 500
 
+    print(f"\n=== Debug: Retrieved Data ===")
+    print(f"Policies: {json.dumps(policies, indent=2)}")
+    print(f"Resources: {json.dumps(resources, indent=2)}")
+
     policy_map, edges, resource_map = map_policies_to_resources(policies, resources, resource_type)
+    print(f"Generated edges: {json.dumps(edges, indent=2)}")
+
+
+    print(f"\n=== Debug: Mapping Results ===")
+    print(f"Policy Map: {json.dumps(policy_map, indent=2)}")
+    print(f"Edges: {json.dumps(edges, indent=2)}")
+    print(f"Resource Map: {json.dumps(resource_map, indent=2)}")
 
     # 그래프 데이터 준비
     nodes = []
@@ -240,9 +275,11 @@ def data():
 
     # 노드 추가
     for resource_key, resource in resource_map.items():
-        nodes.append({
+        node = {
             'data': {'id': resource_key, 'label': resource['label'], 'group': resource['group']}
-        })
+        }
+        print(f"\nAdding node: {json.dumps(node, indent=2)}")
+        nodes.append(node)
 
     # 엣지 추가
     for edge in edges:
@@ -253,23 +290,28 @@ def data():
         else:
             ports_str = 'All Ports'
 
-        formatted_edges.append({
+        formatted_edge = {
             'data': {
                 'source': edge['source'],
                 'target': edge['target'],
                 'type': edge['type'],
                 'label': f"{edge['type'].capitalize()} ({ports_str})"
             }
-        })
+        }
+        print(f"\nAdding edge: {json.dumps(formatted_edge, indent=2)}")
+        formatted_edges.append(formatted_edge)
 
     # 중복 제거
     unique_nodes = {node['data']['id']: node for node in nodes}.values()
-    unique_edges = formatted_edges  # 필요 시 중복 제거 로직 추가
+    unique_edges = formatted_edges
 
     graph_data = {
         'nodes': list(unique_nodes),
         'edges': unique_edges
     }
+
+    print(f"\n=== Debug: Final Graph Data ===")
+    print(f"Graph Data: {json.dumps(graph_data, indent=2)}")
 
     # 캐싱
     with cache_lock:

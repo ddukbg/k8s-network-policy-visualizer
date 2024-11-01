@@ -25,77 +25,56 @@ def favicon():
 
 @api.route('/data')
 def data():
-    logger.debug("Data request received")  # 로깅 추가
+    logger.debug("Data request received")
     resource_type = request.args.get('resource_type', 'deployment')
-    logger.debug(f"Resource type: {resource_type}")  # 로깅 추가
-
-    with cache_lock:
-        if cached_graph_data.get(resource_type):
-            logger.debug("Returning cached data")  # 로깅 추가
-            return jsonify(cached_graph_data[resource_type])
-
-    try:
-        policies = get_network_policies()
-        logger.debug(f"Fetched {len(policies.get('items', []))} network policies")  # 로깅 추가
-
-        if resource_type == 'deployment':
-            resources = get_deployments()
-        else:
-            resources = get_pods()
-        
-        logger.debug(f"Fetched {len(resources.get('items', []))} {resource_type}s")  # 로깅 추가
-
-        policy_map, edges, resource_map = map_policies_to_resources(policies, resources, resource_type)
-
-        # 노드와 엣지 데이터 생성 전에 로깅
-        logger.debug(f"Mapped data: {len(resource_map)} resources, {len(edges)} edges")
-
-        nodes = []
-        formatted_edges = []
-
-        # 노드 생성
-        for resource_key, resource in resource_map.items():
-            nodes.append({
-                'data': {
-                    'id': resource_key,
-                    'label': resource['label'],
-                    'group': resource['group']
-                }
-            })
-
-        # 엣지 생성
-        for edge in edges:
-            ports = edge.get('ports', [])
-            if ports:
-                ports_str = ', '.join([f"{p.get('protocol', 'TCP')}/{p.get('port', 'N/A')}" for p in ports])
-            else:
-                ports_str = 'All Ports'
-
-            formatted_edges.append({
-                'data': {
-                    'source': edge['source'],
-                    'target': edge['target'],
-                    'type': edge['type'],
-                    'label': f"{edge['type'].capitalize()} ({ports_str})"
-                }
-            })
-
-        logger.debug(f"Created {len(nodes)} nodes and {len(formatted_edges)} edges")  # 로깅 추가
-
-        graph_data = {
-            'nodes': nodes,
-            'edges': formatted_edges
+    
+    policies = get_network_policies()
+    logger.debug(f"Retrieved {len(policies['items'])} policies")
+    
+    if resource_type == 'deployment':
+        resources = get_deployments()
+    else:
+        resources = get_pods()
+    logger.debug(f"Retrieved {len(resources['items'])} {resource_type}s")
+    
+    policy_map, edges, resource_map = map_policies_to_resources(policies, resources, resource_type)
+    logger.debug(f"Generated {len(edges)} edges")
+    
+    # 노드와 엣지 포맷팅
+    nodes = []
+    formatted_edges = []
+    
+    for resource_key, resource in resource_map.items():
+        node = {
+            'data': {
+                'id': resource_key,
+                'label': resource['label'],
+                'group': resource['type'] if resource.get('type') else resource['group']
+            }
         }
-
-        with cache_lock:
-            cached_graph_data[resource_type] = graph_data
-
-        logger.debug("Returning new graph data")  # 로깅 추가
-        return jsonify(graph_data)
-
-    except Exception as e:
-        logger.error(f"Error generating graph data: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        nodes.append(node)
+    
+    # 엣지 포맷팅
+    for edge in edges:
+        formatted_edge = {
+            'data': {
+                'id': f"{edge['source']}->{edge['target']}",
+                'source': edge['source'],
+                'target': edge['target'],
+                'directed': True,  # 화살표 표시를 위해 추가
+                'type': edge['type'],
+                'label': f"{edge['type'].capitalize()} ({', '.join([f'{p.get('protocol', 'TCP')}/{p.get('port', 'N/A')}' for p in edge['ports']])})"
+            }
+        }
+        formatted_edges.append(formatted_edge)
+    
+    graph_data = {
+        'nodes': nodes,
+        'edges': formatted_edges
+    }
+    
+    logger.debug(f"Final graph data: {len(nodes)} nodes, {len(formatted_edges)} edges")
+    return jsonify(graph_data)
 
 @api.route('/namespaces')
 def namespaces():
