@@ -1,57 +1,241 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>k8sNetPolVisualizer</title>
-    <!-- Cytoscape.js -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Network Policy Visualizer 2.0</title>
+    
+    <!-- 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.1/cytoscape.min.js"></script>
-    <!-- cose-bilkent 레이아웃 확장 로드 -->
     <script src="https://unpkg.com/cytoscape-cose-bilkent@4.0.0/cytoscape-cose-bilkent.js"></script>
-    <!-- Socket.IO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-    <!-- Custom CSS -->
+    
+    <!-- 스타일 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <header>
-        <h1>Kubernetes Network Policy Visualizer</h1>
-    </header>
-
-    <section class="controls-section">
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Search for Pod or Policy...">
-        </div>
-        <div class="filter-container">
-            <h3>Filter by Namespace</h3>
-            <div id="namespace-filters">
-                <!-- 체크박스가 여기에 동적으로 추가됩니다 -->
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <span class="material-icons logo-icon">account_tree</span>
+                <h1 class="logo-text">K8s Network Policy Visualizer</h1>
+                <span class="version-badge">v2.0</span>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn btn-icon" id="refresh-btn" title="데이터 새로고침">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button class="btn btn-icon" id="settings-btn" title="설정">
+                    <span class="material-icons">settings</span>
+                </button>
+                <button class="btn btn-icon" id="help-btn" title="도움말">
+                    <span class="material-icons">help</span>
+                </button>
             </div>
         </div>
-        <!-- Resource Type 필터 추가 -->
-        <div class="resource-filter-container">
-            <h3>Filter by Resource Type</h3>
-            <label>
-                <input type="radio" name="resource_type" value="deployment" checked> Deployment
-            </label>
-            <label>
-                <input type="radio" name="resource_type" value="pod"> Pod
-            </label>
-        </div>
-    </section>
+    </header>
 
-    <main class="main-container">
-        <!-- 로딩 오버레이 -->
-        <div id="loading-overlay">
-            <div class="spinner"></div>
-        </div>
+    <!-- 메인 컨테이너 -->
+    <div class="main-layout">
+        <!-- 사이드바 -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- 검색 섹션 -->
+                <div class="search-section">
+                    <div class="search-container">
+                        <span class="material-icons search-icon">search</span>
+                        <input type="text" id="search" placeholder="Pod 또는 정책 검색..." class="search-input">
+                        <button class="btn btn-icon search-clear" id="search-clear">
+                            <span class="material-icons">clear</span>
+                        </button>
+                    </div>
+                </div>
 
-        <div id="graph" class="graph-container"></div>
-        <div id="details" class="details-container">
-            <h2>Details</h2>
-            <div id="detail-content">Click on a node to see details.</div>
-        </div>
-    </main>
+                <!-- 필터 섹션 -->
+                <div class="filter-section">
+                    <!-- 리소스 타입 필터 -->
+                    <div class="filter-group">
+                        <h3 class="filter-title">
+                            <span class="material-icons">category</span>
+                            리소스 타입
+                        </h3>
+                        <div class="resource-type-filters">
+                            <label class="radio-card">
+                                <input type="radio" name="resource_type" value="pod" checked>
+                                <div class="radio-content">
+                                    <span class="material-icons">dns</span>
+                                    <span>Pod</span>
+                                </div>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="resource_type" value="deployment">
+                                <div class="radio-content">
+                                    <span class="material-icons">apps</span>
+                                    <span>Deployment</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
 
-    <!-- 사용자 스크립트 로드 -->
+                    <!-- 네임스페이스 필터 -->
+                    <div class="filter-group">
+                        <h3 class="filter-title">
+                            <span class="material-icons">folder</span>
+                            네임스페이스
+                            <span class="filter-count" id="namespace-count">0</span>
+                        </h3>
+                        <div class="namespace-filters" id="namespace-filters">
+                            <!-- 동적으로 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- 통신 시뮬레이션 -->
+                    <div class="filter-group">
+                        <h3 class="filter-title">
+                            <span class="material-icons">play_arrow</span>
+                            통신 시뮬레이션
+                        </h3>
+                        <div class="simulation-controls">
+                            <div class="simulation-field">
+                                <label for="source-select">소스:</label>
+                                <select id="source-select" class="simulation-select">
+                                    <option value="">소스 선택...</option>
+                                </select>
+                            </div>
+                            <div class="simulation-field">
+                                <label for="target-select">타겟:</label>
+                                <select id="target-select" class="simulation-select">
+                                    <option value="">타겟 선택...</option>
+                                </select>
+                            </div>
+                            <div class="simulation-field">
+                                <label for="port-input">포트:</label>
+                                <input type="number" id="port-input" class="simulation-input" value="80" min="1" max="65535">
+                            </div>
+                            <div class="simulation-field">
+                                <label for="protocol-select">프로토콜:</label>
+                                <select id="protocol-select" class="simulation-select">
+                                    <option value="TCP">TCP</option>
+                                    <option value="UDP">UDP</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary simulation-btn" id="simulate-btn">
+                                <span class="material-icons">play_arrow</span>
+                                시뮬레이션 실행
+                            </button>
+                        </div>
+                        <div class="simulation-result" id="simulation-result" style="display: none;">
+                            <!-- 시뮬레이션 결과가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+
+                    <!-- 상태 정보 -->
+                    <div class="filter-group">
+                        <h3 class="filter-title">
+                            <span class="material-icons">info</span>
+                            상태 정보
+                        </h3>
+                        <div class="status-info">
+                            <div class="status-item">
+                                <span class="status-label">정책:</span>
+                                <span class="status-value" id="policy-count">0</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">리소스:</span>
+                                <span class="status-value" id="resource-count">0</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">연결:</span>
+                                <span class="status-value" id="edge-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="main-content">
+            <!-- 그래프 컨테이너 -->
+            <div class="graph-section">
+                <div class="graph-header">
+                    <div class="graph-controls">
+                        <button class="btn btn-small" id="fit-btn">
+                            <span class="material-icons">center_focus_strong</span>
+                            전체 보기
+                        </button>
+                        <button class="btn btn-small" id="layout-btn">
+                            <span class="material-icons">view_module</span>
+                            레이아웃 변경
+                        </button>
+                        <button class="btn btn-small" id="export-btn">
+                            <span class="material-icons">download</span>
+                            내보내기
+                        </button>
+                    </div>
+                    <div class="connection-status">
+                        <span class="status-indicator" id="connection-status"></span>
+                        <span id="connection-text">연결 중...</span>
+                    </div>
+                </div>
+                
+                <div class="graph-container" id="graph">
+                    <!-- 로딩 상태 -->
+                    <div class="loading-overlay" id="loading-overlay">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>네트워크 정책을 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 상세 정보 패널 -->
+            <div class="details-panel" id="details-panel">
+                <div class="details-header">
+                    <h2 class="details-title">
+                        <span class="material-icons">info</span>
+                        상세 정보
+                    </h2>
+                    <button class="btn btn-icon" id="close-details">
+                        <span class="material-icons">close</span>
+                    </button>
+                </div>
+                <div class="details-content" id="details-content">
+                    <div class="details-placeholder">
+                        <span class="material-icons">touch_app</span>
+                        <p>노드를 클릭하면 상세 정보를 확인할 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- 모달 -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">제목</h3>
+                <button class="btn btn-icon" id="modal-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-content" id="modal-content">
+                <!-- 동적 콘텐츠 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>
